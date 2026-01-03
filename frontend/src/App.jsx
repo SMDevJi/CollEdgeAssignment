@@ -2,8 +2,11 @@ import { useState } from 'react'
 import './App.css'
 import { useEffect } from 'react';
 import { toast, Toaster } from 'sonner'
+import { FaSpinner } from 'react-icons/fa';
 
 function App() {
+  const [loading, setLoading] = useState(false)
+  const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -19,10 +22,12 @@ function App() {
   }, []);
 
   const fetchContacts = async () => {
+    setLoading(true)
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contacts`);
     const data = await res.json();
     toast.success('Contacts fetched successfully!')
     setContacts(data);
+    setLoading(false)
   };
 
   const validate = () => {
@@ -52,6 +57,8 @@ function App() {
     e.preventDefault();
     if (!validate()) return;
 
+    setAdding(true)
+
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contacts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -60,10 +67,12 @@ function App() {
 
     if (!res.ok) {
       toast.error('Failed to add contact!')
+      setAdding(false)
       return;
     };
 
     toast.success('Contact added successfully!')
+    setAdding(false)
 
     const data = await res.json();
 
@@ -72,12 +81,20 @@ function App() {
   };
 
   const deleteContact = async (id) => {
-    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contacts/${id}`,
+    toast.warning(' Deleting contact.....')
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/contacts/${id}`,
       { method: "DELETE" }
     );
+
+    if (!res.ok) {
+      toast.error('Failed to delete contact!')
+      return;
+    };
     toast.success('Contact deleted successfully!')
     setContacts((prev) => prev.filter((c) => c._id !== id));
   };
+
+
 
   return (
     <div className="min-h-screen bg-neutral-900 text-green-300 text-lg p-6">
@@ -156,9 +173,10 @@ function App() {
           />
 
           <button
-            className="w-full bg-green-300 hover:bg-green-400 py-2 rounded font-bold text-green-700 cursor-pointer"
+            className={`w-full flex justify-center items-center ${adding ? 'bg-green-500 hover:bg-green-500 text-white ' : 'bg-green-300 hover:bg-green-400 text-green-700'}  py-2 px-3 rounded font-bold  cursor-pointer`}
           >
-            Add Contact
+            {adding ? <FaSpinner className="animate-spin mr-2" /> : ''}
+            {adding ? 'Adding Contact...' : 'Add Contact'}
           </button>
         </form>
 
@@ -167,34 +185,43 @@ function App() {
           <h2 className="text-xl mb-3 text-green-300 font-semibold">Contact List</h2>
 
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-150 text-left">
-              <thead className="border-b border-gray-300 text-white">
-                <tr>
-                  <th className='p-2'>Name</th>
-                  <th className='p-2'>Email</th>
-                  <th className='p-2'>Phone</th>
-                  <th className='p-2'>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map((c) => (
-                  <tr key={c._id} className="border-b border-gray-800 text-xl">
-                    <td className='p-2'>{c.name}</td>
-                    <td className="text-green-300 p-2">{c.email}</td>
-                    <td className='p-2'>{c.phone}</td>
-                    <td className='p-2'>
-                      <button
-                        onClick={() => deleteContact(c._id)}
-                        className="text-white bg-red-500 hover:bg-red-700 px-3 py-1 rounded-md text-lg font-semibold cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </td>
+          <div className="overflow-x-auto ">
+            {loading &&
+              <div className="loading-container w-full h-20 flex justify-center">
+                <FaSpinner className=" w-12.5 h-12.5 animate-spin" />
+              </div>}
+            {!loading &&
+              <table className="w-full min-w-150 text-left">
+                <thead className="border-b border-gray-300 text-white">
+                  <tr>
+                    <th className='p-2'>Name</th>
+                    <th className='p-2'>Email</th>
+                    <th className='p-2'>Phone</th>
+                    <th className='p-2'>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+
+
+                  {contacts.map((c) => (
+                    <tr key={c._id} className="border-b border-gray-800 text-xl">
+                      <td className='p-2'>{c.name}</td>
+                      <td className="text-green-300 p-2">{c.email}</td>
+                      <td className='p-2'>{c.phone}</td>
+                      <td className='p-2'>
+                        <button
+                          onClick={() => deleteContact(c._id)}
+                          className="text-white bg-red-500 hover:bg-red-700 px-3 py-1 rounded-md text-lg font-semibold cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            }
+
           </div>
 
 
